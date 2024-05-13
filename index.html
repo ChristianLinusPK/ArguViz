@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script type="module" src="draw.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<dialog id="dialog" close>
+    <p> Greetings dear viewer! </p>
+    <button class="dialogClose" id="dialogClose" type="submit"> close </button>
+</dialog>
+
+<div class="top-menu">
+    <div class="top-buttons">
+        <label for="file-selector" class="custom-file-input"> Open...
+            <input type="file" id="file-selector" accept=".af, .apx, .txt">
+        </label>
+        <select id="extensionSelect" class="custom-select">
+            <option value="" disabled selected>No AF Uploaded</option>
+        </select>
+        <button class="top-menu-button" id="edit" type="submit"> Edit</button>
+        <button class="top-menu-button" id="view" type="submit"> View</button>
+        <button class="top-menu-button" id="layout" type="submit"> Layout</button>
+        <div class="spacing-container">
+            <label> Spacing Layers:</label>
+            <div class="spacing-buttons">
+                <button id="spaceOutHorizontal" type="submit"> +</button>
+                <button id="spaceInHorizontal" type="submit"> -</button>
+            </div>
+        </div>
+        <div class="spacing-container">
+            <label> Spacing Arguments:</label>
+            <div class="spacing-buttons">
+                <button id="spaceOutVertical" type="submit"> +</button>
+                <button id="spaceInVertical" type="submit"> -</button>
+            </div>
+        </div>
+        <button class="top-menu-button" id="rotate" type="submit"> Rotate</button>
+        <button class="info-button" id="info" type="submit"> i</button>
+    </div>
+</div>
+
+<div class="container">
+    <canvas id="graph" concontextmenu="return false;"></canvas>
+    <div class="tab-box">
+        <div class="tab-buttons">
+            <button class="tab-button active" id="pipelineButton">Pipeline</button>
+            <button class="tab-button" id="exactButton">Exact</button>
+            <button class="tab-button" id="actionsButton">Actions</button>
+        </div>
+        <div class="tab-content active" id="pipeline">
+            <div class="setting">
+                <label>Red Edge Selection Strategy: </label>
+                <div class="setting-bar">
+                    <button class="setting-button active" data-setting="0" id="strategy0">Concentrated</button>
+                    <button class="setting-button" data-setting="0" id="strategy1">Dispersed</button>
+                    <button class="setting-button" data-setting="0" id="strategy2">Random</button>
+                </div>
+            </div>
+            <div class="setting">
+                <label>Prioritize Not Attacked:</label>
+                <div class="setting-bar">
+                    <button class="setting-button" data-setting="1" id="priorityON">ON</button>
+                    <button class="setting-button active" data-setting="1" id="priorityOFF">OFF</button>
+                </div>
+            </div>
+            <div class="setting">
+                <label>Local Search:</label>
+                <div class="setting-bar">
+                    <button class="setting-button active" data-setting="2" id="localSearchON">ON</button>
+                    <button class="setting-button" data-setting="2" id="localSearchOFF">OFF</button>
+                </div>
+            </div>
+            <div class="button-center">
+                <button id="allSteps" type="submit"> Run</button>
+            </div>
+        </div>
+        <div class="tab-content" id="exact">
+            <form>
+                <label for="exactTimeout">Timeout (min):</label><br>
+                <input type="number" value="30" id="exactTimeout" min="0"><br>
+            </form>
+            <div class="button-center">
+                <button id="exactTLCM" type="submit"> exact TLCM</button>
+                <button id="exactMLCM" type="submit"> exact MLCM</button>
+            </div>
+        </div>
+        <div class="tab-content" id="actions">
+            <div class="actions-container">
+                <button id="highlightOddCycles" type="submit"> Highlight Odd Cycles</button>
+                <button id="highlightDefended" type="submit"> Highlight Defended</button>
+                <button id="saveImg" type="submit"> Save png</button>
+                <button id="save" type="submit"> Save apx</button>
+                <button id="saveIpe" type="submit"> Save ipe</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="output">
+    <div id="crossCount" class="CC"></div>
+</div>
+<!--
+<input id="test-file-selector" type="file" webkitdirectory directory multiple>
+-->
+</body>
+</html>

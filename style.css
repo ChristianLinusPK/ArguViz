@@ -1,0 +1,263 @@
+
+body, html {
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    display: flex;
+    border-bottom: 1px solid grey;
+    border-top: 1px solid grey;
+}
+
+#graph {
+    flex: 1;
+}
+
+.tab-box {
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid grey;
+
+}
+
+.dialogClose{
+    border: none;
+    padding: 1rem;
+    cursor: pointer;
+    flex: 1;
+    background-color: #2e5960;
+    border-radius: 5px;
+    margin: 5px;
+    color: white;
+}
+
+.tab-content {
+    flex: 1;
+    display: none;
+    padding: 20px;
+    background-color: rgba(218, 236, 242, 0.4);
+
+}
+
+.actions-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.actions-container button {
+    border: none;
+    padding: 5px;
+    cursor: pointer;
+    flex: 1;
+    background-color: #2e5960;
+    border-radius: 5px;
+    margin: 2px;
+    color: white;
+}
+
+.tab-buttons {
+    display: flex;
+    flex-direction: row;
+}
+
+/* Show the active tab content */
+.tab-content.active {
+    display: block;
+}
+
+.tab-button {
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    flex: 1;
+    background-color: #d2d9d8;
+    color: black;
+}
+
+.top-menu .label {
+    margin: 20pc;
+}
+
+
+
+/* Hide the input element */
+.custom-file-input input[type="file"] {
+    display: none;
+}
+
+/* Style the active tab button */
+.tab-button.active {
+    background-color: rgba(218, 236, 242, 0.4);
+    color: black;
+}
+
+.top-menu {
+    height: auto;
+    width: 100%;
+}
+
+
+.top-buttons {
+    display: flex;
+    padding: 5px;
+    background-color: #daecf2;
+}
+
+.custom-select {
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    background-color: #2e5960;
+    border-radius: 5px;
+    color: white;
+    height:40px;
+    margin: 5px;
+}
+
+.spacing-buttons{
+    display: flex;
+}
+
+.spacing-buttons button{
+    border: none;
+    padding: 1px;
+    cursor: pointer;
+    flex: 1;
+    background-color: #2e5960;
+    border-radius: 5px;
+    margin: 1px;
+    color: white;
+}
+
+.output {
+    height: auto;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.CC {
+    flex: 3;
+    padding: 15px;
+    font-size: larger;
+}
+
+.save {
+    flex: 1;
+    margin-left: 3rem;
+}
+
+.save button {
+    border: none;
+    padding: 1rem;
+    cursor: pointer;
+    flex: 1;
+    background-color: #2e5960;
+    border-radius: 5px;
+    margin: 5px;
+    color: white;
+}
+
+.spacing-container {
+    padding: 5px;
+}
+
+.top-menu-button, .custom-file-input {
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    flex: 1;
+    background-color: #2e5960;
+    border-radius: 5px;
+    margin: 5px;
+    color: white;
+}
+
+.setting label {
+    display: block;
+    margin-bottom: 1px;
+}
+
+.setting {
+    padding: 2px;
+}
+
+.setting-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 1px;
+}
+
+.button-center {
+    border: none;
+    flex: 1;
+    margin-top: 1rem;
+}
+
+.button-center button{
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    flex: 1;
+    background-color: #2e5960;
+    border-radius: 5px;
+    margin-bottom: -1px;
+    color: white;
+}
+
+.setting-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid grey;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.setting-button {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    background-color: #d2d9d8;
+    color: black;
+    cursor: pointer;
+    box-shadow: rgba(50, 50, 93, 0.1) 0px 10px 20px -6px inset, rgba(0, 0, 0, 0.20) 0px 6px 12px -6px inset;
+
+}
+
+.setting-button.active {
+    background-color: white;
+    color: black;
+}
+
+
+#exact label {
+    margin-bottom: 5px; /* Adjust the margin to control the space between label and input */
+}
+
+.info-button {
+    border: 3px solid black;
+    padding: 10px;
+    cursor: pointer;
+    height: 40px;
+    width: 40px;
+    background-color: #2e5960;
+    border-radius: 5px;
+    margin: 5px;
+    color: white;
+}
+
+#exact input[type="number"] {
+    border: 1px solid gray;
+    padding: 5px;
+    margin-bottom: 5px;
+    cursor: pointer;
+}
