@@ -631,7 +631,8 @@ function localSearchRedEdges(attacks, inSet, outSet) {
                         outSet[i] = outSetOriginal[i];
                     }
                 }
-            };
+            }
+            ;
         }
     }
 }
@@ -647,7 +648,7 @@ function pipeline(inSet, outSet) {
 // exact methods
 //================================================================================
 // This can be used in Browser (but Gurobi is much faster)
-async function exactTLCMGLPK(attacks, layer_n, layer_s) {
+async function exactTLCMGLPK(attacks, layer_n, layer_s, timeout) {
     const glpk = await GLPK();
     let model = toLPString(attacks, layer_n, layer_s);
     const lp = {
@@ -657,12 +658,17 @@ async function exactTLCMGLPK(attacks, layer_n, layer_s) {
             name: 'obj',
             vars: model.vars
         },
-        subjectTo: model.cons,
+        subjectTo: model.constraints,
         binaries: model.binaries
     };
-
+    if(timeout < 1){
+        timeout = 1;
+    }
+    timeout *= 60;
+    console.log(timeout)
     const options = {
         msglev: glpk.GLP_MSG_ALL,
+        tmlim: timeout,
         presol: true,
         cb: {
             call: progress => console.log(progress),
@@ -670,8 +676,7 @@ async function exactTLCMGLPK(attacks, layer_n, layer_s) {
         }
     };
 
-    const solution = await glpk.solve(lp, glpk.GLP_MSG_DBG);
-    console.log(solution);
+    const solution = await glpk.solve(lp, options);
     const vars = Object.entries(solution.result.vars);
     let orderings_n = vars.filter(v => v[0].startsWith("x") && v[1] === 1).map(v => v[0]);
     let orderings_s = vars.filter(v => v[0].startsWith("y") && v[1] === 1).map(v => v[0]);
@@ -693,9 +698,9 @@ async function exactTLCMGLPK(attacks, layer_n, layer_s) {
 }
 
 function toLPString(attacks, layer_n, layer_s) {
-    let objective = "";
-    let constraints = "";
-    let binary = "";
+    let vars = [];
+    let constraints = [];
+    let binary = [];
 
     let atts = mapAttacksToNorthSouthEdges(attacks, layer_n, layer_s);
     atts.sort((att1, att2) => layer_n.indexOf(att1.n) - layer_n.indexOf(att2.n));
@@ -727,15 +732,31 @@ function toLPString(attacks, layer_n, layer_s) {
                 continue;
             }
             let cijkl = "c" + atts[i].n.label + "." + atts[i].s.label + "." + atts[j].n.label + "." + atts[j].s.label
-            objective += " " + (weights[i] + weights[j] + 1) + " " + cijkl + " +";
+            vars.push({name: cijkl, coef: (weights[i] + weights[j] + 1)});
             let xik = 'x.' + atts[i].n.label + "." + atts[j].n.label;
             let xki = 'x.' + atts[j].n.label + "." + atts[i].n.label;
             let yjl = 'y.' + atts[i].s.label + "." + atts[j].s.label;
             let ylj = 'y.' + atts[j].s.label + "." + atts[i].s.label;
-            constraints += " c" + constraintNumber + ": " + xik + " + " + ylj + " - " + cijkl + " <= 1\n";
-            constraints += " c" + (constraintNumber + 1) + ": " + xki + " + " + yjl + " - " + cijkl + " <= 1\n";
+            constraints.push({
+                    name: 'cons' + constraintNumber,
+                    vars: [
+                        {name: xik, coef: 1},
+                        {name: ylj, coef: 1},
+                        {name: cijkl, coef: -1}
+                    ],
+                    bnds: {type: 3, ub: 1.0, lb: 0},
+                },
+                {
+                    name: 'cons' + (constraintNumber + 1),
+                    vars: [
+                        {name: xki, coef: 1},
+                        {name: yjl, coef: 1},
+                        {name: cijkl, coef: -1}
+                    ],
+                    bnds: {type: 3, ub: 1.0, lb: 0},
+                });
             constraintNumber += 2;
-            binary += " " + cijkl;
+            binary.push(cijkl);
 
             if (attacksToS.find(att => {
                 return att.n === atts[i].n && att.s === atts[i].s
@@ -744,7 +765,15 @@ function toLPString(attacks, layer_n, layer_s) {
             })) {
                 let rij = "r." + atts[i].n.label + "." + atts[i].s.label;
                 let rkl = "r." + atts[j].n.label + "." + atts[j].s.label;
-                constraints += " c" + constraintNumber + ": " + rij + " + " + rkl + " + " + cijkl + " <= 2\n";
+                constraints.push({
+                    name: 'cons' + constraintNumber,
+                    vars: [
+                        {name: rij, coef: 1},
+                        {name: rkl, coef: 1},
+                        {name: cijkl, coef: 1}
+                    ],
+                    bnds: {type: 3, ub: 2.0, lb: 0}
+                });
                 constraintNumber++;
             }
         }
@@ -754,9 +783,23 @@ function toLPString(attacks, layer_n, layer_s) {
         for (let j = i + 1; j < layer_n.length; j++) {
             let xij = 'x.' + layer_n[i].label + "." + layer_n[j].label;
             let xji = 'x.' + layer_n[j].label + "." + layer_n[i].label;
-            constraints += " c" + constraintNumber + ": " + xij + " + " + xji + " = 1\n";
-            constraintNumber++;
-            binary += " " + xij + " " + xji;
+            constraints.push({
+                name: 'cons' + constraintNumber,
+                vars: [
+                    {name: xij, coef: 1},
+                    {name: xji, coef: 1},
+                ],
+                bnds: {type: 3, ub: 1.0, lb: 0}
+            }, {
+                name: 'cons' + (constraintNumber + 1),
+                vars: [
+                    {name: xij, coef: 1},
+                    {name: xji, coef: 1},
+                ],
+                bnds: {type: 2, ub: 0, lb: 1.0}
+            });
+            constraintNumber += 2;
+            binary.push(xij, xji);
         }
     }
 
@@ -764,9 +807,23 @@ function toLPString(attacks, layer_n, layer_s) {
         for (let j = i + 1; j < layer_s.length; j++) {
             let yij = 'y.' + layer_s[i].label + "." + layer_s[j].label;
             let yji = 'y.' + layer_s[j].label + "." + layer_s[i].label;
-            constraints += " c" + constraintNumber + ": " + yij + " + " + yji + " = 1\n";
-            constraintNumber++;
-            binary += " " + yij + " " + yji;
+            constraints.push({
+                name: 'cons' + constraintNumber,
+                vars: [
+                    {name: yij, coef: 1},
+                    {name: yji, coef: 1},
+                ],
+                bnds: {type: 3, ub: 1.0, lb: 0}
+            }, {
+                name: 'cons' + (constraintNumber + 1),
+                vars: [
+                    {name: yij, coef: 1},
+                    {name: yji, coef: 1},
+                ],
+                bnds: {type: 2, ub: 0, lb: 1.0}
+            });
+            constraintNumber += 2;
+            binary.push(yij, yji);
         }
     }
 
@@ -776,8 +833,23 @@ function toLPString(attacks, layer_n, layer_s) {
                 let xij = 'x.' + layer_n[i].label + "." + layer_n[j].label;
                 let xjk = 'x.' + layer_n[j].label + "." + layer_n[k].label;
                 let xik = 'x.' + layer_n[i].label + "." + layer_n[k].label;
-                constraints += " c" + constraintNumber + ": " + xij + " + " + xjk + " - " + xik + " <= 1\n";
-                constraints += " c" + (constraintNumber + 1) + ": " + xij + " + " + xjk + " - " + xik + " >= 0\n";
+                constraints.push({
+                    name: 'cons' + constraintNumber,
+                    vars: [
+                        {name: xij, coef: 1},
+                        {name: xjk, coef: 1},
+                        {name: xik, coef: -1},
+                    ],
+                    bnds: {type: 3, ub: 1.0, lb: 0}
+                }, {
+                    name: 'cons' + (constraintNumber + 1),
+                    vars: [
+                        {name: xij, coef: 1},
+                        {name: xjk, coef: 1},
+                        {name: xik, coef: -1},
+                    ],
+                    bnds: {type: 2, ub: 0, lb: 0}
+                });
                 constraintNumber += 2;
             }
         }
@@ -788,8 +860,23 @@ function toLPString(attacks, layer_n, layer_s) {
                 let yij = 'y.' + layer_s[i].label + "." + layer_s[j].label;
                 let yjk = 'y.' + layer_s[j].label + "." + layer_s[k].label;
                 let yik = 'y.' + layer_s[i].label + "." + layer_s[k].label;
-                constraints += " c" + constraintNumber + ": " + yij + " + " + yjk + " - " + yik + " <= 1\n";
-                constraints += " c" + (constraintNumber + 1) + ": " + yij + " + " + yjk + " - " + yik + " >= 0\n";
+                constraints.push({
+                    name: 'cons' + constraintNumber,
+                    vars: [
+                        {name: yij, coef: 1},
+                        {name: yjk, coef: 1},
+                        {name: yik, coef: -1},
+                    ],
+                    bnds: {type: 3, ub: 1.0, lb: 0}
+                }, {
+                    name: 'cons' + (constraintNumber + 1),
+                    vars: [
+                        {name: yij, coef: 1},
+                        {name: yjk, coef: 1},
+                        {name: yik, coef: -1},
+                    ],
+                    bnds: {type: 2, ub: 0, lb: 0}
+                });
                 constraintNumber += 2;
             }
         }
@@ -797,20 +884,26 @@ function toLPString(attacks, layer_n, layer_s) {
 
     for (let i = 0; i < layer_s.length; i++) {
         let attackedBy = attacks.filter(att => att.to === layer_s[i] && att.from.set === layer_n);
-        let vars = [];
-        let c = "c" + constraintNumber + ":";
+        let red = [];
         attackedBy.forEach(att => {
             let rij = "r." + att.from.label + "." + att.to.label;
-            c += " " + rij + " + ";
-            binary += " " + rij;
+            red.push({name: rij, coef: 1});
+            binary.push(rij);
         })
-        c = c.slice(0, -3);
-        c += " = 1\n"
-        constraints += " " + c;
-        constraintNumber += 1;
+        if(red.length > 0){
+            constraints.push({
+                name: 'cons' + constraintNumber,
+                vars: red,
+                bnds: {type: 3, ub: 1.0, lb: 0}
+            }, {
+                name: 'cons' + (constraintNumber + 1),
+                vars: red,
+                bnds: {type: 2, ub: 0, lb: 1}
+            });
+            constraintNumber += 2;
+        }
     }
-    let lp = "Minimize\n" + objective.slice(0, -2) + "\nSubject To\n" + constraints + "Binary\n" + binary + "\nEnd";
-    return lp;
+    return {vars: vars, constraints: constraints, binaries: binary};
 }
 
 
@@ -974,7 +1067,7 @@ function findOddCircles(set) {
     }
 
     cycles = cycles.filter(cycle => cycle.length % 2 !== 0);
-    cycles.sort((a,b) => b.length - a.length);
+    cycles.sort((a, b) => b.length - a.length);
     return cycles;
 }
 
