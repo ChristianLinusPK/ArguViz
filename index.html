@@ -10,6 +10,24 @@
 <body>
 
 <dialog id="dialog" close>
+    <h3>Input Format Example:</h3>
+    <p> arg(a1). <br>
+     arg(a2).<br>
+     arg(a3).<br>
+        att(a1,a2).<br>
+        att(a2,a3).<br>
+        att(a3,a3).<br>
+        <br>
+        Extension 1<br>
+        in(a1) out(a2) undec(a3)<br>
+        <br>
+        Extension 2<br>
+        ...
+    </p>
+    <p> (The encoding of the AF and each extension is seperated by an empty line.)</p>
+    <h3>Exact Methods:</h3>
+    <p> The TLCM method serves as a demo and can be run in the browser. For performance reasons, only IN/OUT crossings are minimized. </p>
+    <p> To run the MLCM method, which minimizes all crossings using gurobi, a local Flask application needs to be running. The application is available at: <a href="https://github.com/ChristianLinusPK/ArguViz">https://github.com/ChristianLinusPK/ArguViz</a> </p>
     <button class="dialogClose" id="dialogClose" type="submit"> close </button>
 </dialog>
 
@@ -47,7 +65,7 @@
     <canvas id="graph" concontextmenu="return false;"></canvas>
     <div class="tab-box">
         <div class="tab-buttons">
-            <button class="tab-button active" id="pipelineButton">Pipeline</button>
+            <button class="tab-button active" id="pipelineButton">Heuristic</button>
             <button class="tab-button" id="exactButton">Exact</button>
             <button class="tab-button" id="actionsButton">Actions</button>
         </div>
@@ -79,14 +97,15 @@
             </div>
         </div>
         <div class="tab-content" id="exact">
+            <p> See "i" (top right) <br> for usage instructions.</p>
             <form>
                 <label for="exactTimeout">Timeout (min):</label><br>
                 <input type="number" value="30" id="exactTimeout" min="0"><br>
             </form>
-            <div class="button-center">
                 <!--<button id="exactTLCM" type="submit"> exact TLCM</button>-->
+            <div class="button-center">
+                <button id="exactBrowser" type="submit"> exact TLCM</button>
                 <button id="exactMLCM" type="submit"> exact MLCM</button>
-                <button id="exactBrowser" type="submit"> exact TlCM</button>
             </div>
         </div>
         <div class="tab-content" id="actions">
