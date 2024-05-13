@@ -22,7 +22,7 @@ const exactTabButton = document.getElementById("exactButton");
 const actionsTabButton = document.getElementById("actionsButton");
 const strategy0Button = document.getElementById("strategy0");
 const strategy1Button = document.getElementById("strategy1");
-const strategy2Button = document.getElementById("strategy2");
+//const strategy2Button = document.getElementById("strategy2");
 const priorityONButton = document.getElementById("priorityON");
 const priorityOFFButton = document.getElementById("priorityOFF");
 const localSearchONButton = document.getElementById("localSearchON");
@@ -43,7 +43,8 @@ const selectRedButton = document.getElementById("selectRed");
 const allStepsButton = document.getElementById("allSteps");
 const highlightOddCyclesButton = document.getElementById("highlightOddCycles");
 const highlightDefendedButton = document.getElementById("highlightDefended");
-const exactTLCMButton = document.getElementById("exactTLCM");
+const browserSolverButton = document.getElementById("exactBrowser");
+//const exactTLCMButton = document.getElementById("exactTLCM");
 const exactMLCMButton = document.getElementById("exactMLCM");
 const extensionSelect = document.getElementById("extensionSelect");
 const exactTimeout = document.getElementById("exactTimeout");
@@ -72,7 +73,7 @@ let verticalSpacing = 1;
 let isRotated = false;
 
 let cameraOffset = {x: canvas.width / 2, y: canvas.height / 2}
-let cameraZoom = 1
+let cameraZoom = 0.8
 const MAX_ZOOM = 5
 const MIN_ZOOM = 0.1
 const SCROLL_SENSITIVITY = 0.0005
@@ -168,15 +169,12 @@ async function initializeExt(input) {
     output();
     await draw();
     await drawArgumentsMoving(oldPositions,newPositions);
-
-    await exactTLCMGLPK(attacks, inSet, outSet);
-    adjustCoordinatesToOrder();
-    draw();
 }
 
 // Reset the extension, i.e., clear all arguments from the sets and reset spacing and mode to default
 function resetExt() {
     resetRedEdges();
+    document.getElementById("crossCount").innerHTML = "";
     args.forEach(arg => arg.color = '#22cccc');
     attacks.forEach(att => att.color = "rgba(0, 153, 153, 0.3)");
     horizontalSpacing = 1;
@@ -1611,6 +1609,15 @@ async function sendToSolver(graph) {
     return result;
 }
 
+async function browserSolver(){
+    let oldPositions = args.map(arg => ({x: arg.x, y: arg.y}));
+    await exactTLCMGLPK(attacks, inSet, outSet, exactTimeout.value);
+    adjustCoordinatesToOrder()
+    let newPositions = args.map(arg => ({x: arg.x, y: arg.y}));
+    output();
+    await drawArgumentsMoving(oldPositions, newPositions);
+}
+
 function layout() {
     if (isExtension) {
         adjustCoordinatesToOrder();
@@ -1743,14 +1750,15 @@ highlightOddCyclesButton.addEventListener('click', () => {
 highlightDefendedButton.addEventListener('click', () => {
     highlightArgsWithOnlyIncomingAttacks(inSet), draw
 });
-exactTLCMButton.addEventListener('click', () => exactTLCM());
+//exactTLCMButton.addEventListener('click', () => exactTLCM());
+browserSolverButton.addEventListener('click', () => browserSolver());
 exactMLCMButton.addEventListener('click', () => exactMLCM());
 pipelineTabButton.addEventListener('click', () => showTab("pipeline", pipelineTabButton));
 exactTabButton.addEventListener('click', () => showTab("exact", exactTabButton));
 actionsTabButton.addEventListener('click', () => showTab("actions", actionsTabButton));
 strategy0Button.addEventListener('click', () => toggleSetting(0, strategy0Button));
 strategy1Button.addEventListener('click', () => toggleSetting(0, strategy1Button));
-strategy2Button.addEventListener('click', () => toggleSetting(0, strategy2Button));
+//strategy2Button.addEventListener('click', () => toggleSetting(0, strategy2Button));
 priorityONButton.addEventListener('click', () => toggleSetting(1, priorityONButton));
 priorityOFFButton.addEventListener('click', () => toggleSetting(1, priorityOFFButton));
 localSearchONButton.addEventListener('click', () => toggleSetting(2, localSearchONButton));
