@@ -12,11 +12,14 @@ body, html {
 
 #graph {
     flex: 1;
+    width: 75%;
+    height: 75%;
 }
 
 .tab-box {
-    width: 300px;
     display: flex;
+    width: auto;
+    min-width: 250px;
     flex-direction: column;
     border-left: 1px solid grey;
 
@@ -200,6 +203,9 @@ body, html {
     border: none;
     flex: 1;
     margin-top: 1rem;
+    justify-content: space-between;
+    align-items: center;
+
 }
 
 .button-center button{
