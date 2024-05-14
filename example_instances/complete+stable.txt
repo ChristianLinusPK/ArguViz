@@ -1,0 +1,42 @@
+arg(a0).
+arg(a2_2).
+arg(a2).
+arg(a2_4).
+arg(a4).
+arg(a2_6).
+att(a0,a2_2).
+att(a2_2,a2_2).
+att(a2_2,a0).
+att(a2,a2_4).
+att(a2_4,a2_4).
+att(a2_4,a2).
+att(a4,a2_6).
+att(a2_6,a2_6).
+att(a2_6,a4).
+
+Complete extension 1
+undec(a0) undec(a2_2) undec(a2) undec(a2_4) undec(a4) undec(a2_6)
+
+Complete extension 2
+in(a2) undec(a0) undec(a2_2) undec(a4) undec(a2_6) out(a2_4)
+
+Complete extension 3
+in(a4) undec(a0) undec(a2_2) undec(a2) undec(a2_4) out(a2_6)
+
+Complete extension 4
+in(a2) in(a4) undec(a0) undec(a2_2) out(a2_4) out(a2_6)
+
+Complete extension 5
+in(a0) undec(a2) undec(a2_4) undec(a4) undec(a2_6) out(a2_2)
+
+Complete extension 6
+in(a0) in(a4) undec(a2) undec(a2_4) out(a2_2) out(a2_6)
+
+Complete extension 7
+in(a0) in(a2) undec(a4) undec(a2_6) out(a2_2) out(a2_4)
+
+Complete extension 8
+in(a0) in(a2) in(a4) out(a2_2) out(a2_4) out(a2_6)
+
+Stable extension
+in(a0) in(a2) in(a4) out(a2_2) out(a2_4) out(a2_6)
