@@ -15,6 +15,7 @@ import {
     exactTLCMGLPK
 } from './algorithm.js';
 
+
 const canvas = document.getElementById("graph")
 const context = canvas.getContext('2d');
 const pipelineTabButton = document.getElementById("pipelineButton");
@@ -37,6 +38,7 @@ const layoutButton = document.getElementById("layout");
 const saveAsImgButton = document.getElementById("saveImg");
 const saveIpeButton = document.getElementById("saveIpe");
 const fileSelector = document.getElementById('file-selector');
+const exampleSelector = document.getElementById("exampleSelect");
 const saveAsFileButton = document.getElementById("save");
 const rotateButton = document.getElementById("rotate");
 const selectRedButton = document.getElementById("selectRed");
@@ -48,9 +50,11 @@ const browserSolverButton = document.getElementById("exactBrowser");
 const exactMLCMButton = document.getElementById("exactMLCM");
 const extensionSelect = document.getElementById("extensionSelect");
 const exactTimeout = document.getElementById("exactTimeout");
-const infoButton = document.getElementById("info")
-const dialog = document.getElementById("dialog")
-const dialogCloseButton = document.getElementById("dialogClose")
+const infoButton = document.getElementById("info");
+const infoDialog = document.getElementById("dialogInfo");
+const openButton = document.getElementById("open");
+const openDialog = document.getElementById("dialogOpen");
+const openSelectDialogButton = document.getElementById("open");
 //const testFileSelector = document.getElementById("test-file-selector");
 
 
@@ -63,7 +67,7 @@ const MODE = {
 let mode = MODE.Edit;
 
 let CANVAS_HEIGHT = window.innerHeight * 0.75;
-let CANVAS_WIDTH = window.innerWidth *0.75;
+let CANVAS_WIDTH = window.innerWidth * 0.75;
 canvas.height = CANVAS_HEIGHT;
 canvas.width = CANVAS_WIDTH;
 
@@ -117,7 +121,7 @@ async function initializeAf(input) {
                     args.find(a => a.label === matchAtt[1]),
                     args.find(a => a.label === matchAtt[2])
                 );
-                if(matchAtt[0].startsWith('att*')){
+                if (matchAtt[0].startsWith('att*')) {
                     redEdges.push(att);
                 }
             }
@@ -125,7 +129,7 @@ async function initializeAf(input) {
     }
 
     //An AF with no extension is visualized as a force directed layout
-    if(redEdges.length < 1){
+    if (redEdges.length < 1) {
         await forceDirectedLayout();
         draw();
     }
@@ -138,7 +142,6 @@ async function initializeExt(input) {
     isExtension = true;
 
     input.split(" ").forEach(part => {
-        // Check if part matches the pattern "set(argument)"
         const match = part.toLowerCase().match(/^(in|out|undec)\((.+)\)$/);
         if (match) {
             const arg = args.find(a => a.label === match[2]);
@@ -160,7 +163,7 @@ async function initializeExt(input) {
 
     let newPositions = args.map(arg => ({x: arg.x, y: arg.y}));
 
-    if(colorInOrange){
+    if (colorInOrange) {
         args.forEach(arg => {
             arg.color = arg.set === inSet ? 'rgba(255, 190, 6)' : arg.color;
         })
@@ -168,7 +171,7 @@ async function initializeExt(input) {
 
     output();
     await draw();
-    await drawArgumentsMoving(oldPositions,newPositions);
+    await drawArgumentsMoving(oldPositions, newPositions);
 }
 
 // Reset the extension, i.e., clear all arguments from the sets and reset spacing and mode to default
@@ -254,8 +257,6 @@ function adjustCoordinatesToOrder() {
 
     let canvasTop = -canvas.height / 2;
     let start = 10 + canvasTop + 20 * horizontalSpacing;
-
-    // Iterate over each set of arguments and adjust their x and y coordinates based on their position in the set
     for (const {set, x} of setPositions) {
         const constantDifference = (canvas.height - (20 * verticalSpacing)) / (set.length + 1);
         for (let i = 0; i < set.length; i++) {
@@ -320,8 +321,6 @@ let currentPath;
 async function draw() {
     canvas.width = CANVAS_WIDTH;
     canvas.height = CANVAS_HEIGHT;
-
-    // Set camera position and scale
     context.translate(canvas.width / 2, canvas.height / 2);
     context.scale(cameraZoom, cameraZoom);
     context.translate(-canvas.width / 2 + cameraOffset.x, -canvas.height / 2 + cameraOffset.y);
@@ -332,7 +331,6 @@ async function draw() {
 
     context.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw set labels if extension
     if (isExtension) {
         drawSetLabels();
     }
@@ -365,7 +363,6 @@ function delay(ms) {
 }
 
 function drawArgumentLabel(arg) {
-    // Set the font size based on the camera zoom
     const size = 15 * (1 / cameraZoom);
     context.font = `${size}px Arial`;
 
@@ -374,7 +371,6 @@ function drawArgumentLabel(arg) {
     if (isRotated) {
         context.save();
         context.translate(arg.x - 5, arg.y);
-        // Rotate the context 90 degrees counterclockwise
         context.rotate(-Math.PI / 2);
         context.fillText(arg.label, 0, 0);
         context.restore();
@@ -420,13 +416,11 @@ function drawSetLabel(label, x, y, isRotated) {
 }
 
 function drawAttack(attack) {
-    // Get the argument the attack is coming from and which argument it is attacking
     let fromArg = attack.from;
     let toArg = attack.to;
 
     context.strokeStyle = attack.color;
 
-    // Attacks that are chosen to be highlighted are drawn red
     if (attack.chosen) {
         context.strokeStyle = 'red';
     } else if (isExtension && colorInOrange) {
@@ -435,41 +429,32 @@ function drawAttack(attack) {
         }
     }
 
-
-    // Check if the argument attacks itself
     if (fromArg === toArg) {
         drawSelfAttack(fromArg);
-    }
-    // Check if the attack is between two arguments in the same set
-    else if (fromArg.set === toArg.set && isExtension) {
+    } else if (fromArg.set === toArg.set && isExtension) {
         drawSameSetAttack(fromArg, toArg);
-    }
-    // Otherwise, the attack is between two arguments in different sets
-    else {
+    } else {
         drawDifferentSetAttack(fromArg, toArg);
     }
 
 }
 
 function drawSelfAttack(arg) {
-    // If the argument is in IN then the loop is drawn on the left, otherwise it is drawn on the right
     const x = arg.x + (arg.set === inSet ? -50 : 50);
     drawDirectedBezier(arg, arg, x, arg.y + 2 * 10, x, arg.y - 2 * 10);
 }
 
 function drawDifferentSetAttack(fromArg, toArg) {
-    if(!isExtension && attackEachOther(fromArg,toArg)){
+    if (!isExtension && attackEachOther(fromArg, toArg)) {
         let controlPoint1;
-        if(indexIsBefore(fromArg,toArg)){
+        if (indexIsBefore(fromArg, toArg)) {
             controlPoint1 = findPointPerpendicularToLine(fromArg, toArg, 15 * horizontalSpacing);
         } else {
             controlPoint1 = findPointPerpendicularToLine(fromArg, toArg, -15 * horizontalSpacing);
         }
         const controlPoint2 = controlPoint1;
         drawDirectedBezier(fromArg, toArg, controlPoint1.x, controlPoint1.y, controlPoint2.x, controlPoint2.y);
-    }
-    // If two arguments attack each other, the attacks are drawn as curves and one has its control point above and one below the other so that they do not cross
-    else if (attackEachOther(fromArg, toArg) && fromArg.set !== inSet && indexIsBefore(fromArg,toArg)) {
+    } else if (attackEachOther(fromArg, toArg) && fromArg.set !== inSet && indexIsBefore(fromArg, toArg)) {
         const controlPoint1 = findPointPerpendicularToLine(fromArg, toArg, 15 * horizontalSpacing);
         const controlPoint2 = controlPoint1;
         drawDirectedBezier(fromArg, toArg, controlPoint1.x, controlPoint1.y, controlPoint2.x, controlPoint2.y);
@@ -479,14 +464,9 @@ function drawDifferentSetAttack(fromArg, toArg) {
 }
 
 function drawSameSetAttack(fromArg, toArg) {
-    // A single attack between adjacent arguments in a set can be drawn as straight line
     if (areNeighboursInSet(fromArg, toArg) && !attackEachOther(fromArg, toArg)) {
         drawDirectedLine(fromArg, toArg);
-    }
-
-        // If adjacent arguments attack each other, one attack can be drawn as a straight line and the other one as a curve so that they do not cross
-    // To decide which attack is drawn as line and which one as a curve, the index of the argument the attack is coming from is used
-    else if (areNeighboursInSet(fromArg, toArg) && attackEachOther(fromArg, toArg) && indexIsBefore(fromArg, toArg)) {
+    } else if (areNeighboursInSet(fromArg, toArg) && attackEachOther(fromArg, toArg) && indexIsBefore(fromArg, toArg)) {
         drawDirectedLine(fromArg, toArg);
     } else if (attackEachOther(fromArg, toArg) && indexIsBefore(fromArg, toArg)) {
         // If the attack is between two arguments in the first layer (only possible when no extension is selected) it "goes around" on the left, otherwise on the right
@@ -495,11 +475,7 @@ function drawSameSetAttack(fromArg, toArg) {
         } else {
             drawDirectedBezier(fromArg, toArg, fromArg.x + Math.abs(toArg.y - fromArg.y) / 2, fromArg.y + (toArg.y - fromArg.y) / 2, fromArg.x + Math.abs(toArg.y - fromArg.y) / 2, fromArg.y + (toArg.y - fromArg.y) / 2);
         }
-    }
-
-        // Attacks between arguments in the IN set have their control point on the left, attacks in the other sets on the right of their set
-    // The horizontal distance of the control point of the curve (which is representing the attack) is increasing with the length of the curve
-    else {
+    } else {
         if (fromArg.set === inSet) {
             drawDirectedBezier(fromArg, toArg, (fromArg.x - Math.abs(toArg.y - fromArg.y) / 2) - 20, fromArg.y + (toArg.y - fromArg.y) / 2, (fromArg.x - Math.abs(toArg.y - fromArg.y) / 2) - 20, fromArg.y + (toArg.y - fromArg.y) / 2);
         } else {
@@ -630,7 +606,7 @@ function getBezierLength(fromArg, toArg, cp1x, cp1y, cp2x, cp2y) {
 //================================================================================
 // animation
 //================================================================================
-async function drawArgumentsMoving(oldPositions,newPositions) {
+async function drawArgumentsMoving(oldPositions, newPositions) {
     let iterations = 120;
     if (args.length > 100) {
         iterations = 80;
@@ -743,7 +719,6 @@ function onPointerDown(e) {
 
     switch (mode) {
         case MODE.Edit:
-            //left button clicked
             if (e.button === 0) {
                 if (selectedArg?.selected) selectedArg.selected = false;
                 if (target) {
@@ -1434,9 +1409,11 @@ async function initializeFromFile(file) {
     setSelectOptions();
 
     let redEdges = await initializeAf(argumentsAndAttributes);
-    if(redEdges.length > 0 && extensions.length > 0){
+    if (redEdges.length > 0 && extensions.length > 0) {
         await initializeExt(extensions[0].labeling)
-        for (const att of redEdges) {att.chosen = true}
+        for (const att of redEdges) {
+            att.chosen = true
+        }
     }
 
 }
@@ -1459,21 +1436,39 @@ async function loadExtension(selectedExtension) {
         output();
         let newPositions = args.map(arg => ({x: arg.x, y: arg.y}));
         await drawArgumentsMoving(oldPositions, newPositions);
+    } else if (selectedExtension === "-1") {
+        resetExt();
+        isExtension = true;
+        let oldPositions = args.map(arg => ({x: arg.x, y: arg.y}));
+        computeGrounded(args, inSet, outSet, undecSet);
+        colorInOrange = true;
+        inSet.forEach(arg => (arg.color = 'rgba(255, 190, 6)'))
+        adjustCoordinatesToOrder();
+        let newPositions = args.map(arg => ({x: arg.x, y: arg.y}));
+        output();
+        await drawArgumentsMoving(oldPositions, newPositions);
     } else {
-        if (selectedExtension === "-1") {
-            resetExt();
-            isExtension = true;
-            let oldPositions = args.map(arg => ({x: arg.x, y: arg.y}));
-            computeGrounded(args, inSet, outSet, undecSet);
-            colorInOrange = true;
-            inSet.forEach(arg => (arg.color = 'rgba(255, 190, 6)'))
-            adjustCoordinatesToOrder();
-            let newPositions = args.map(arg => ({x: arg.x, y: arg.y}));
-            output();
-            await drawArgumentsMoving(oldPositions,newPositions);
-        } else {
-            await initializeExt(extensions[selectedExtension].labeling);
-        }
+        await initializeExt(extensions[selectedExtension].labeling);
+    }
+
+}
+
+async function loadExample(selectedExample) {
+    switch (selectedExample){
+        case "1":
+            await initializeFromFile(admissibleFile);
+            break;
+        case "2":
+            await initializeFromFile(preferredFile);
+            break;
+        case "3":
+            await initializeFromFile(stableFile);
+            break;
+        case "4":
+            await initializeFromFile(stableCompleteFile);
+            break;
+        default:
+            break;
     }
 }
 
@@ -1526,7 +1521,7 @@ function getInOutWeight() {
 }
 
 let weight12Input = "1";
-let weight2Input= "1";
+let weight2Input = "1";
 let weight23Input = "1";
 let weight3Input = "1";
 
@@ -1609,7 +1604,7 @@ async function sendToSolver(graph) {
     return result;
 }
 
-async function browserSolver(){
+async function browserSolver() {
     let oldPositions = args.map(arg => ({x: arg.x, y: arg.y}));
     await exactTLCMGLPK(attacks, inSet, outSet, exactTimeout.value);
     adjustCoordinatesToOrder()
@@ -1739,7 +1734,9 @@ layoutButton.addEventListener('click', layout);
 saveAsImgButton.addEventListener('click', downloadCanvasAsImage)
 saveIpeButton.addEventListener('click', () => downloadIpe());
 saveAsFileButton.addEventListener('click', () => downloadFile('AfVis.apx'))
-fileSelector.addEventListener('change', (e) => initializeFromFile(e.target.files.item(0)));
+fileSelector.addEventListener('change', (e) => {
+    initializeFromFile(e.target.files.item(0)), openDialog.close()
+});
 rotateButton.addEventListener('click', () => isRotated = !isRotated);
 allStepsButton.addEventListener('click', () => {
     pipeline()
@@ -1763,5 +1760,739 @@ priorityONButton.addEventListener('click', () => toggleSetting(1, priorityONButt
 priorityOFFButton.addEventListener('click', () => toggleSetting(1, priorityOFFButton));
 localSearchONButton.addEventListener('click', () => toggleSetting(2, localSearchONButton));
 localSearchOFFButton.addEventListener('click', () => toggleSetting(2, localSearchOFFButton));
-infoButton.addEventListener('click', ()=> dialog.showModal());
-dialogCloseButton.addEventListener('click', ()=> dialog.close());
+infoButton.addEventListener('click', () => infoDialog.showModal());
+openButton.addEventListener('click', () => openDialog.showModal())
+
+exampleSelector.onchange = () => { loadExample(exampleSelector.value), openDialog.close()};
+
+let admissibleExample =  "arg(a41).\n" +
+    "arg(a42).\n" +
+    "arg(a40).\n" +
+    "arg(a20).\n" +
+    "arg(a9).\n" +
+    "arg(a16).\n" +
+    "arg(a17).\n" +
+    "arg(a14).\n" +
+    "arg(a15).\n" +
+    "arg(a12).\n" +
+    "arg(a13).\n" +
+    "arg(a10).\n" +
+    "arg(a11).\n" +
+    "arg(a35).\n" +
+    "arg(a1).\n" +
+    "arg(a34).\n" +
+    "arg(a2).\n" +
+    "arg(a33).\n" +
+    "arg(a3).\n" +
+    "arg(a32).\n" +
+    "arg(a4).\n" +
+    "arg(a39).\n" +
+    "arg(a5).\n" +
+    "arg(a38).\n" +
+    "arg(a6).\n" +
+    "arg(a37).\n" +
+    "arg(a7).\n" +
+    "arg(a18).\n" +
+    "arg(a36).\n" +
+    "arg(a8).\n" +
+    "arg(a19).\n" +
+    "arg(a50).\n" +
+    "arg(a31).\n" +
+    "arg(a30).\n" +
+    "arg(a25).\n" +
+    "arg(a26).\n" +
+    "arg(a27).\n" +
+    "arg(a28).\n" +
+    "arg(a21).\n" +
+    "arg(a22).\n" +
+    "arg(a23).\n" +
+    "arg(a24).\n" +
+    "arg(a44).\n" +
+    "arg(a43).\n" +
+    "arg(a46).\n" +
+    "arg(a45).\n" +
+    "arg(a48).\n" +
+    "arg(a29).\n" +
+    "arg(a47).\n" +
+    "arg(a49).\n" +
+    "att(a41,a37).\n" +
+    "att(a45,a27).\n" +
+    "att(a40,a38).\n" +
+    "att(a40,a37).\n" +
+    "att(a42,a38).\n" +
+    "att(a41,a38).\n" +
+    "att(a1,a19).\n" +
+    "att(a42,a29).\n" +
+    "att(a19,a44).\n" +
+    "att(a43,a29).\n" +
+    "att(a19,a41).\n" +
+    "att(a18,a47).\n" +
+    "att(a5,a10).\n" +
+    "att(a42,a46).\n" +
+    "att(a42,a44).\n" +
+    "att(a7,a10).\n" +
+    "att(a7,a12).\n" +
+    "att(a2,a29).\n" +
+    "att(a48,a20).\n" +
+    "att(a40,a44).\n" +
+    "att(a40,a46).\n" +
+    "att(a44,a34).\n" +
+    "att(a49,a22).\n" +
+    "att(a40,a43).\n" +
+    "att(a20,a21).\n" +
+    "att(a42,a8).\n" +
+    "att(a20,a23).\n" +
+    "att(a20,a25).\n" +
+    "att(a20,a24).\n" +
+    "att(a44,a1).\n" +
+    "att(a25,a12).\n" +
+    "att(a41,a18).\n" +
+    "att(a23,a17).\n" +
+    "att(a41,a4).\n" +
+    "att(a20,a16).\n" +
+    "att(a49,a1).\n" +
+    "att(a49,a3).\n" +
+    "att(a49,a4).\n" +
+    "att(a45,a3).\n" +
+    "att(a43,a17).\n" +
+    "att(a47,a2).\n" +
+    "att(a47,a1).\n" +
+    "att(a17,a13).\n" +
+    "att(a12,a29).\n" +
+    "att(a17,a15).\n" +
+    "att(a16,a17).\n" +
+    "att(a16,a18).\n" +
+    "att(a17,a12).\n" +
+    "att(a39,a44).\n" +
+    "att(a17,a19).\n" +
+    "att(a18,a13).\n" +
+    "att(a39,a43).\n" +
+    "att(a39,a41).\n" +
+    "att(a24,a6).\n" +
+    "att(a14,a18).\n" +
+    "att(a15,a14).\n" +
+    "att(a10,a22).\n" +
+    "att(a38,a43).\n" +
+    "att(a34,a50).\n" +
+    "att(a15,a10).\n" +
+    "att(a14,a17).\n" +
+    "att(a16,a13).\n" +
+    "att(a15,a19).\n" +
+    "att(a16,a15).\n" +
+    "att(a16,a14).\n" +
+    "att(a37,a42).\n" +
+    "att(a15,a18).\n" +
+    "att(a11,a24).\n" +
+    "att(a22,a3).\n" +
+    "att(a12,a15).\n" +
+    "att(a14,a12).\n" +
+    "att(a13,a15).\n" +
+    "att(a13,a14).\n" +
+    "att(a10,a14).\n" +
+    "att(a10,a13).\n" +
+    "att(a10,a12).\n" +
+    "att(a11,a16).\n" +
+    "att(a11,a15).\n" +
+    "att(a11,a12).\n" +
+    "att(a35,a37).\n" +
+    "att(a35,a36).\n" +
+    "att(a36,a34).\n" +
+    "att(a2,a1).\n" +
+    "att(a35,a39).\n" +
+    "att(a36,a32).\n" +
+    "att(a1,a6).\n" +
+    "att(a18,a33).\n" +
+    "att(a39,a23).\n" +
+    "att(a35,a33).\n" +
+    "att(a10,a50).\n" +
+    "att(a34,a38).\n" +
+    "att(a2,a6).\n" +
+    "att(a34,a39).\n" +
+    "att(a2,a7).\n" +
+    "att(a3,a6).\n" +
+    "att(a19,a23).\n" +
+    "att(a37,a28).\n" +
+    "att(a3,a5).\n" +
+    "att(a19,a22).\n" +
+    "att(a18,a29).\n" +
+    "att(a3,a4).\n" +
+    "att(a10,a45).\n" +
+    "att(a34,a33).\n" +
+    "att(a34,a32).\n" +
+    "att(a4,a2).\n" +
+    "att(a4,a1).\n" +
+    "att(a34,a30).\n" +
+    "att(a37,a20).\n" +
+    "att(a11,a44).\n" +
+    "att(a32,a33).\n" +
+    "att(a5,a4).\n" +
+    "att(a37,a24).\n" +
+    "att(a4,a9).\n" +
+    "att(a4,a8).\n" +
+    "att(a36,a40).\n" +
+    "att(a36,a41).\n" +
+    "att(a5,a7).\n" +
+    "att(a5,a8).\n" +
+    "att(a17,a21).\n" +
+    "att(a18,a20).\n" +
+    "att(a6,a4).\n" +
+    "att(a6,a5).\n" +
+    "att(a18,a23).\n" +
+    "att(a6,a8).\n" +
+    "att(a18,a21).\n" +
+    "att(a17,a29).\n" +
+    "att(a18,a22).\n" +
+    "att(a19,a20).\n" +
+    "att(a7,a4).\n" +
+    "att(a19,a21).\n" +
+    "att(a39,a38).\n" +
+    "att(a14,a33).\n" +
+    "att(a19,a14).\n" +
+    "att(a15,a20).\n" +
+    "att(a38,a33).\n" +
+    "att(a8,a3).\n" +
+    "att(a33,a46).\n" +
+    "att(a38,a35).\n" +
+    "att(a38,a37).\n" +
+    "att(a19,a16).\n" +
+    "att(a36,a37).\n" +
+    "att(a8,a9).\n" +
+    "att(a16,a21).\n" +
+    "att(a37,a32).\n" +
+    "att(a36,a38).\n" +
+    "att(a37,a34).\n" +
+    "att(a9,a6).\n" +
+    "att(a9,a7).\n" +
+    "att(a50,a46).\n" +
+    "att(a50,a47).\n" +
+    "att(a50,a49).\n" +
+    "att(a33,a23).\n" +
+    "att(a50,a20).\n" +
+    "att(a33,a28).\n" +
+    "att(a31,a28).\n" +
+    "att(a32,a27).\n" +
+    "att(a31,a2).\n" +
+    "att(a31,a34).\n" +
+    "att(a32,a31).\n" +
+    "att(a32,a30).\n" +
+    "att(a31,a35).\n" +
+    "att(a30,a31).\n" +
+    "att(a33,a8).\n" +
+    "att(a35,a23).\n" +
+    "att(a30,a35).\n" +
+    "att(a30,a27).\n" +
+    "att(a30,a29).\n" +
+    "att(a35,a17).\n" +
+    "att(a31,a27).\n" +
+    "att(a31,a26).\n" +
+    "att(a30,a21).\n" +
+    "att(a30,a26).\n" +
+    "att(a30,a25).\n" +
+    "att(a39,a8).\n" +
+    "att(a26,a24).\n" +
+    "att(a25,a29).\n" +
+    "att(a26,a22).\n" +
+    "att(a12,a9).\n" +
+    "att(a26,a20).\n" +
+    "att(a25,a26).\n" +
+    "att(a27,a25).\n" +
+    "att(a27,a23).\n" +
+    "att(a26,a29).\n" +
+    "att(a27,a21).\n" +
+    "att(a13,a8).\n" +
+    "att(a28,a26).\n" +
+    "att(a24,a33).\n" +
+    "att(a9,a42).\n" +
+    "att(a28,a27).\n" +
+    "att(a9,a40).\n" +
+    "att(a28,a25).\n" +
+    "att(a8,a46).\n" +
+    "att(a28,a23).\n" +
+    "att(a25,a34).\n" +
+    "att(a29,a27).\n" +
+    "att(a29,a28).\n" +
+    "att(a9,a46).\n" +
+    "att(a5,a50).\n" +
+    "att(a21,a26).\n" +
+    "att(a7,a40).\n" +
+    "att(a21,a22).\n" +
+    "att(a17,a5).\n" +
+    "att(a34,a3).\n" +
+    "att(a6,a48).\n" +
+    "att(a22,a25).\n" +
+    "att(a3,a50).\n" +
+    "att(a24,a21).\n" +
+    "att(a28,a15).\n" +
+    "att(a24,a22).\n" +
+    "att(a3,a48).\n" +
+    "att(a25,a21).\n" +
+    "att(a1,a50).\n" +
+    "att(a24,a27).\n" +
+    "att(a44,a45).\n" +
+    "att(a1,a46).\n" +
+    "att(a45,a40).\n" +
+    "att(a48,a39).\n" +
+    "att(a45,a42).\n" +
+    "att(a44,a49).\n" +
+    "att(a45,a41).\n" +
+    "att(a49,a36).\n" +
+    "att(a45,a43).\n" +
+    "att(a1,a48).\n" +
+    "att(a43,a44).\n" +
+    "att(a48,a31).\n" +
+    "att(a2,a49).\n" +
+    "att(a46,a47).\n" +
+    "att(a29,a41).\n" +
+    "att(a47,a43).\n" +
+    "att(a47,a44).\n" +
+    "att(a47,a45).\n" +
+    "att(a1,a32).\n" +
+    "att(a49,a48).\n" +
+    "att(a2,a32).\n" +
+    "att(a1,a39).\n" +
+    "att(a48,a43).\n" +
+    "att(a48,a47).\n" +
+    "att(a48,a46).\n" +
+    "att(a28,a30).\n" +
+    "att(a48,a45).\n" +
+    "att(a48,a44).\n" +
+    "att(a23,a47).\n" +
+    "att(a8,a11).\n" +
+    "att(a29,a32).\n" +
+    "att(a9,a11).\n" +
+    "att(a11,a7).\n" +
+    "att(a9,a10).\n" +
+    "att(a11,a6).\n" +
+    "att(a9,a13).\n" +
+    "att(a1,a31).\n" +
+    "\n" +
+    "Admissible Extension 1\n" +
+    "in(a35) in(a34) in(a2) in(a5) in(a28) in(a48) undec(a41) undec(a42) undec(a40) undec(a9) undec(a16) undec(a14) undec(a12) undec(a13) undec(a11) undec(a18) undec(a19) undec(a21) undec(a22) undec(a24) out(a37) out(a27) out(a38) out(a29) out(a44) out(a47) out(a10) out(a46) out(a20) out(a43) out(a8) out(a23) out(a25) out(a1) out(a17) out(a4) out(a3) out(a15) out(a6) out(a50) out(a36) out(a39) out(a32) out(a33) out(a7) out(a45) out(a30) out(a49) out(a31) out(a26)\n" +
+    "\n" +
+    "Admissible Extension 2\n" +
+    "in(a35) in(a34) in(a2) in(a5) in(a19) in(a28) in(a48) undec(a42) undec(a40) undec(a9) undec(a12) undec(a13) undec(a11) undec(a18) undec(a24) out(a37) out(a27) out(a38) out(a29) out(a44) out(a41) out(a47) out(a10) out(a46) out(a20) out(a22) out(a43) out(a21) out(a8) out(a23) out(a25) out(a1) out(a17) out(a4) out(a16) out(a3) out(a15) out(a6) out(a14) out(a50) out(a36) out(a39) out(a32) out(a33) out(a7) out(a45) out(a30) out(a49) out(a31) out(a26)\n" +
+    "\n" +
+    "Admissible Extension 3\n" +
+    "in(a35) in(a34) in(a2) in(a5) in(a18) in(a19) in(a28) in(a48) undec(a42) undec(a40) undec(a9) undec(a12) undec(a11) undec(a24) out(a37) out(a27) out(a38) out(a29) out(a44) out(a41) out(a47) out(a10) out(a46) out(a20) out(a22) out(a43) out(a21) out(a8) out(a23) out(a25) out(a1) out(a17) out(a4) out(a16) out(a3) out(a13) out(a15) out(a6) out(a14) out(a50) out(a36) out(a39) out(a32) out(a33) out(a7) out(a45) out(a30) out(a49) out(a31) out(a26)";
+let admissibleFile = new Blob([admissibleExample], {type: "text"});
+
+let preferredExample = "arg(a41).\n" +
+    "arg(a42).\n" +
+    "arg(a40).\n" +
+    "arg(a20).\n" +
+    "arg(a9).\n" +
+    "arg(a16).\n" +
+    "arg(a17).\n" +
+    "arg(a14).\n" +
+    "arg(a15).\n" +
+    "arg(a12).\n" +
+    "arg(a13).\n" +
+    "arg(a10).\n" +
+    "arg(a11).\n" +
+    "arg(a35).\n" +
+    "arg(a1).\n" +
+    "arg(a34).\n" +
+    "arg(a2).\n" +
+    "arg(a33).\n" +
+    "arg(a3).\n" +
+    "arg(a32).\n" +
+    "arg(a4).\n" +
+    "arg(a39).\n" +
+    "arg(a5).\n" +
+    "arg(a38).\n" +
+    "arg(a6).\n" +
+    "arg(a37).\n" +
+    "arg(a7).\n" +
+    "arg(a18).\n" +
+    "arg(a36).\n" +
+    "arg(a8).\n" +
+    "arg(a19).\n" +
+    "arg(a50).\n" +
+    "arg(a31).\n" +
+    "arg(a30).\n" +
+    "arg(a25).\n" +
+    "arg(a26).\n" +
+    "arg(a27).\n" +
+    "arg(a28).\n" +
+    "arg(a21).\n" +
+    "arg(a22).\n" +
+    "arg(a23).\n" +
+    "arg(a24).\n" +
+    "arg(a44).\n" +
+    "arg(a43).\n" +
+    "arg(a46).\n" +
+    "arg(a45).\n" +
+    "arg(a48).\n" +
+    "arg(a29).\n" +
+    "arg(a47).\n" +
+    "arg(a49).\n" +
+    "att(a41,a36).\n" +
+    "att(a49,a19).\n" +
+    "att(a40,a37).\n" +
+    "att(a42,a38).\n" +
+    "att(a41,a38).\n" +
+    "att(a48,a11).\n" +
+    "att(a47,a15).\n" +
+    "att(a40,a35).\n" +
+    "att(a40,a36).\n" +
+    "att(a16,a50).\n" +
+    "att(a40,a31).\n" +
+    "att(a18,a49).\n" +
+    "att(a19,a41).\n" +
+    "att(a42,a40).\n" +
+    "att(a5,a10).\n" +
+    "att(a41,a42).\n" +
+    "att(a18,a44).\n" +
+    "att(a41,a44).\n" +
+    "att(a5,a13).\n" +
+    "att(a42,a47).\n" +
+    "att(a43,a41).\n" +
+    "att(a42,a43).\n" +
+    "att(a42,a45).\n" +
+    "att(a42,a44).\n" +
+    "att(a44,a30).\n" +
+    "att(a7,a10).\n" +
+    "att(a7,a12).\n" +
+    "att(a6,a19).\n" +
+    "att(a40,a45).\n" +
+    "att(a44,a39).\n" +
+    "att(a41,a40).\n" +
+    "att(a40,a43).\n" +
+    "att(a20,a21).\n" +
+    "att(a20,a23).\n" +
+    "att(a24,a19).\n" +
+    "att(a44,a7).\n" +
+    "att(a23,a19).\n" +
+    "att(a21,a18).\n" +
+    "att(a22,a17).\n" +
+    "att(a20,a17).\n" +
+    "att(a20,a19).\n" +
+    "att(a21,a17).\n" +
+    "att(a20,a16).\n" +
+    "att(a45,a18).\n" +
+    "att(a46,a14).\n" +
+    "att(a41,a28).\n" +
+    "att(a49,a2).\n" +
+    "att(a43,a10).\n" +
+    "att(a46,a1).\n" +
+    "att(a47,a1).\n" +
+    "att(a17,a14).\n" +
+    "att(a16,a18).\n" +
+    "att(a17,a18).\n" +
+    "att(a17,a19).\n" +
+    "att(a39,a42).\n" +
+    "att(a39,a41).\n" +
+    "att(a14,a19).\n" +
+    "att(a39,a40).\n" +
+    "att(a15,a11).\n" +
+    "att(a15,a13).\n" +
+    "att(a38,a43).\n" +
+    "att(a14,a16).\n" +
+    "att(a38,a40).\n" +
+    "att(a16,a13).\n" +
+    "att(a15,a19).\n" +
+    "att(a11,a28).\n" +
+    "att(a49,a7).\n" +
+    "att(a15,a16).\n" +
+    "att(a37,a41).\n" +
+    "att(a15,a18).\n" +
+    "att(a22,a3).\n" +
+    "att(a13,a11).\n" +
+    "att(a13,a12).\n" +
+    "att(a12,a16).\n" +
+    "att(a12,a17).\n" +
+    "att(a12,a14).\n" +
+    "att(a13,a17).\n" +
+    "att(a21,a3).\n" +
+    "att(a39,a50).\n" +
+    "att(a12,a10).\n" +
+    "att(a11,a16).\n" +
+    "att(a11,a14).\n" +
+    "att(a11,a12).\n" +
+    "att(a36,a34).\n" +
+    "att(a35,a39).\n" +
+    "att(a2,a4).\n" +
+    "att(a38,a29).\n" +
+    "att(a34,a37).\n" +
+    "att(a2,a5).\n" +
+    "att(a30,a42).\n" +
+    "att(a3,a1).\n" +
+    "att(a35,a34).\n" +
+    "att(a35,a31).\n" +
+    "att(a2,a7).\n" +
+    "att(a33,a36).\n" +
+    "att(a3,a6).\n" +
+    "att(a33,a35).\n" +
+    "att(a18,a29).\n" +
+    "att(a3,a5).\n" +
+    "att(a19,a22).\n" +
+    "att(a33,a34).\n" +
+    "att(a3,a4).\n" +
+    "att(a3,a7).\n" +
+    "att(a32,a35).\n" +
+    "att(a4,a7).\n" +
+    "att(a5,a1).\n" +
+    "att(a5,a7).\n" +
+    "att(a6,a1).\n" +
+    "att(a5,a8).\n" +
+    "att(a36,a43).\n" +
+    "att(a6,a4).\n" +
+    "att(a6,a5).\n" +
+    "att(a18,a23).\n" +
+    "att(a6,a8).\n" +
+    "att(a6,a9).\n" +
+    "att(a19,a21).\n" +
+    "att(a35,a44).\n" +
+    "att(a37,a38).\n" +
+    "att(a14,a28).\n" +
+    "att(a38,a35).\n" +
+    "att(a38,a34).\n" +
+    "att(a8,a4).\n" +
+    "att(a8,a7).\n" +
+    "att(a19,a16).\n" +
+    "att(a38,a36).\n" +
+    "att(a36,a37).\n" +
+    "att(a32,a44).\n" +
+    "att(a16,a21).\n" +
+    "att(a36,a39).\n" +
+    "att(a37,a32).\n" +
+    "att(a9,a5).\n" +
+    "att(a33,a43).\n" +
+    "att(a50,a47).\n" +
+    "att(a50,a3).\n" +
+    "att(a50,a4).\n" +
+    "att(a30,a16).\n" +
+    "att(a32,a29).\n" +
+    "att(a33,a28).\n" +
+    "att(a33,a27).\n" +
+    "att(a31,a5).\n" +
+    "att(a37,a10).\n" +
+    "att(a31,a28).\n" +
+    "att(a30,a9).\n" +
+    "att(a31,a34).\n" +
+    "att(a32,a1).\n" +
+    "att(a30,a31).\n" +
+    "att(a30,a37).\n" +
+    "att(a32,a17).\n" +
+    "att(a30,a27).\n" +
+    "att(a30,a29).\n" +
+    "att(a30,a26).\n" +
+    "att(a30,a25).\n" +
+    "att(a26,a22).\n" +
+    "att(a12,a9).\n" +
+    "att(a25,a26).\n" +
+    "att(a39,a1).\n" +
+    "att(a13,a7).\n" +
+    "att(a26,a29).\n" +
+    "att(a26,a27).\n" +
+    "att(a28,a26).\n" +
+    "att(a14,a8).\n" +
+    "att(a28,a24).\n" +
+    "att(a28,a25).\n" +
+    "att(a28,a23).\n" +
+    "att(a27,a28).\n" +
+    "att(a23,a35).\n" +
+    "att(a28,a21).\n" +
+    "att(a29,a25).\n" +
+    "att(a28,a29).\n" +
+    "att(a5,a50).\n" +
+    "att(a21,a25).\n" +
+    "att(a35,a5).\n" +
+    "att(a22,a20).\n" +
+    "att(a50,a18).\n" +
+    "att(a21,a22).\n" +
+    "att(a25,a14).\n" +
+    "att(a21,a24).\n" +
+    "att(a26,a10).\n" +
+    "att(a5,a49).\n" +
+    "att(a21,a23).\n" +
+    "att(a2,a50).\n" +
+    "att(a22,a27).\n" +
+    "att(a50,a10).\n" +
+    "att(a22,a23).\n" +
+    "att(a35,a2).\n" +
+    "att(a22,a24).\n" +
+    "att(a27,a10).\n" +
+    "att(a23,a27).\n" +
+    "att(a24,a20).\n" +
+    "att(a3,a49).\n" +
+    "att(a23,a24).\n" +
+    "att(a3,a48).\n" +
+    "att(a24,a29).\n" +
+    "att(a25,a23).\n" +
+    "att(a25,a24).\n" +
+    "att(a24,a26).\n" +
+    "att(a24,a27).\n" +
+    "att(a25,a20).\n" +
+    "att(a4,a48).\n" +
+    "att(a49,a31).\n" +
+    "att(a25,a48).\n" +
+    "att(a44,a48).\n" +
+    "att(a45,a44).\n" +
+    "att(a6,a34).\n" +
+    "att(a45,a43).\n" +
+    "att(a1,a48).\n" +
+    "att(a43,a44).\n" +
+    "att(a2,a47).\n" +
+    "att(a44,a40).\n" +
+    "att(a46,a48).\n" +
+    "att(a47,a43).\n" +
+    "att(a47,a45).\n" +
+    "att(a47,a46).\n" +
+    "att(a4,a38).\n" +
+    "att(a29,a43).\n" +
+    "att(a46,a42).\n" +
+    "att(a45,a49).\n" +
+    "att(a9,a27).\n" +
+    "att(a46,a43).\n" +
+    "att(a46,a44).\n" +
+    "att(a46,a45).\n" +
+    "att(a49,a44).\n" +
+    "att(a5,a26).\n" +
+    "att(a45,a50).\n" +
+    "att(a49,a47).\n" +
+    "att(a49,a46).\n" +
+    "att(a27,a31).\n" +
+    "att(a27,a32).\n" +
+    "att(a2,a36).\n" +
+    "att(a48,a47).\n" +
+    "att(a28,a30).\n" +
+    "att(a48,a45).\n" +
+    "att(a10,a6).\n" +
+    "att(a28,a32).\n" +
+    "att(a8,a12).\n" +
+    "att(a10,a8).\n" +
+    "att(a11,a1).\n" +
+    "att(a8,a13).\n" +
+    "att(a48,a50).\n" +
+    "att(a29,a31).\n" +
+    "att(a9,a11).\n" +
+    "att(a11,a7).\n" +
+    "att(a11,a6).\n" +
+    "att(a11,a8).\n" +
+    "att(a12,a1).\n" +
+    "att(a46,a50).\n" +
+    "att(a9,a14).\n" +
+    "att(a10,a9).\n" +
+    "att(a9,a17).\n" +
+    "\n" +
+    "Preferred Extension\n" +
+    "in(a33) in(a32) in(a39) in(a30) undec(a20) undec(a14) undec(a15) undec(a12) undec(a13) undec(a10) undec(a11) undec(a2) undec(a3) undec(a4) undec(a5) undec(a38) undec(a6) undec(a7) undec(a18) undec(a8) undec(a19) undec(a21) undec(a22) undec(a23) undec(a24) undec(a46) undec(a45) undec(a48) undec(a47) undec(a49) out(a36) out(a37) out(a35) out(a50) out(a31) out(a41) out(a40) out(a42) out(a44) out(a43) out(a17) out(a16) out(a28) out(a1) out(a34) out(a29) out(a9) out(a27) out(a26) out(a25)";
+
+let preferredFile = new Blob([preferredExample], {type: "text"});
+
+let stableExample = "arg(a20).\n" +
+    "arg(a16).\n" +
+    "arg(a9).\n" +
+    "arg(a17).\n" +
+    "arg(a14).\n" +
+    "arg(a15).\n" +
+    "arg(a21).\n" +
+    "arg(a12).\n" +
+    "arg(a22).\n" +
+    "arg(a13).\n" +
+    "arg(a10).\n" +
+    "arg(a11).\n" +
+    "arg(a1).\n" +
+    "arg(a2).\n" +
+    "arg(a3).\n" +
+    "arg(a4).\n" +
+    "arg(a5).\n" +
+    "arg(a6).\n" +
+    "arg(a18).\n" +
+    "arg(a7).\n" +
+    "arg(a19).\n" +
+    "arg(a8).\n" +
+    "att(a1,a7).\n" +
+    "att(a13,a2).\n" +
+    "att(a1,a8).\n" +
+    "att(a2,a1).\n" +
+    "att(a13,a3).\n" +
+    "att(a1,a5).\n" +
+    "att(a13,a1).\n" +
+    "att(a2,a5).\n" +
+    "att(a2,a3).\n" +
+    "att(a3,a1).\n" +
+    "att(a14,a2).\n" +
+    "att(a15,a1).\n" +
+    "att(a3,a5).\n" +
+    "att(a2,a11).\n" +
+    "att(a4,a3).\n" +
+    "att(a2,a18).\n" +
+    "att(a3,a9).\n" +
+    "att(a3,a8).\n" +
+    "att(a4,a1).\n" +
+    "att(a5,a6).\n" +
+    "att(a5,a7).\n" +
+    "att(a4,a16).\n" +
+    "att(a17,a3).\n" +
+    "att(a5,a12).\n" +
+    "att(a22,a8).\n" +
+    "att(a20,a8).\n" +
+    "att(a18,a22).\n" +
+    "att(a7,a3).\n" +
+    "att(a19,a3).\n" +
+    "att(a10,a5).\n" +
+    "att(a19,a12).\n" +
+    "att(a4,a21).\n" +
+    "att(a7,a12).\n" +
+    "att(a8,a4).\n" +
+    "att(a10,a4).\n" +
+    "att(a19,a8).\n" +
+    "att(a9,a11).\n" +
+    "att(a11,a18).\n" +
+    "att(a5,a20).\n" +
+    "att(a9,a12).\n" +
+    "att(a5,a16).\n" +
+    "att(a11,a14).\n" +
+    "att(a11,a4).\n" +
+    "\n" +
+    "Stable Extension\n" +
+    "in(a20) in(a16) in(a9) in(a17) in(a15) in(a21) in(a13) in(a10) in(a6) in(a7) in(a19) out(a2) out(a8) out(a1) out(a3) out(a5) out(a11) out(a12) out(a4) in(a14) in(a18) out(a22)";
+
+let stableFile = new Blob([stableExample], {type: "text"});
+
+let stableCompleteExample = "arg(a0).\n" +
+    "arg(a2_2).\n" +
+    "arg(a2).\n" +
+    "arg(a2_4).\n" +
+    "arg(a4).\n" +
+    "arg(a2_6).\n" +
+    "att(a0,a2_2).\n" +
+    "att(a2_2,a2_2).\n" +
+    "att(a2_2,a0).\n" +
+    "att(a2,a2_4).\n" +
+    "att(a2_4,a2_4).\n" +
+    "att(a2_4,a2).\n" +
+    "att(a4,a2_6).\n" +
+    "att(a2_6,a2_6).\n" +
+    "att(a2_6,a4).\n" +
+    "\n" +
+    "Complete extension 1\n" +
+    "undec(a0) undec(a2_2) undec(a2) undec(a2_4) undec(a4) undec(a2_6)\n" +
+    "\n" +
+    "Complete extension 2\n" +
+    "in(a2) undec(a0) undec(a2_2) undec(a4) undec(a2_6) out(a2_4)\n" +
+    "\n" +
+    "Complete extension 3\n" +
+    "in(a4) undec(a0) undec(a2_2) undec(a2) undec(a2_4) out(a2_6)\n" +
+    "\n" +
+    "Complete extension 4\n" +
+    "in(a2) in(a4) undec(a0) undec(a2_2) out(a2_4) out(a2_6)\n" +
+    "\n" +
+    "Complete extension 5\n" +
+    "in(a0) undec(a2) undec(a2_4) undec(a4) undec(a2_6) out(a2_2)\n" +
+    "\n" +
+    "Complete extension 6\n" +
+    "in(a0) in(a4) undec(a2) undec(a2_4) out(a2_2) out(a2_6)\n" +
+    "\n" +
+    "Complete extension 7\n" +
+    "in(a0) in(a2) undec(a4) undec(a2_6) out(a2_2) out(a2_4)\n" +
+    "\n" +
+    "Complete extension 8\n" +
+    "in(a0) in(a2) in(a4) out(a2_2) out(a2_4) out(a2_6)\n" +
+    "\n" +
+    "Stable extension\n" +
+    "in(a0) in(a2) in(a4) out(a2_2) out(a2_4) out(a2_6)";
+
+let stableCompleteFile = new Blob([stableCompleteExample], {type: "text"});

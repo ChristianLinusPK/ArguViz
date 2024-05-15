@@ -25,17 +25,6 @@ body, html {
 
 }
 
-.dialogClose{
-    border: none;
-    padding: 1rem;
-    cursor: pointer;
-    flex: 1;
-    background-color: #2e5960;
-    border-radius: 5px;
-    margin: 5px;
-    color: white;
-}
-
 .tab-content {
     flex: 1;
     display: none;
@@ -66,7 +55,6 @@ body, html {
     flex-direction: row;
 }
 
-/* Show the active tab content */
 .tab-content.active {
     display: block;
 }
@@ -80,18 +68,21 @@ body, html {
     color: black;
 }
 
+.openDialog {
+    display: flex;
+    padding: 5px;
+}
+
 .top-menu .label {
     margin: 20pc;
 }
 
-
-
-/* Hide the input element */
 .custom-file-input input[type="file"] {
     display: none;
 }
 
-/* Style the active tab button */
+
+
 .tab-button.active {
     background-color: rgba(218, 236, 242, 0.4);
     color: black;
@@ -246,7 +237,7 @@ body, html {
 
 
 #exact label {
-    margin-bottom: 5px; /* Adjust the margin to control the space between label and input */
+    margin-bottom: 5px;
 }
 
 .info-button {
