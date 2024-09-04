@@ -43,7 +43,7 @@ const saveAsFileButton = document.getElementById("save");
 const rotateButton = document.getElementById("rotate");
 const selectRedButton = document.getElementById("selectRed");
 const allStepsButton = document.getElementById("allSteps");
-const highlightOddCyclesButton = document.getElementById("highlightOddCycles");
+const highlightUndecButton = document.getElementById("highlightUndec");
 const highlightDefendedButton = document.getElementById("highlightDefended");
 const browserSolverButton = document.getElementById("exactBrowser");
 //const exactTLCMButton = document.getElementById("exactTLCM");
@@ -640,9 +640,9 @@ function highlightArgsWithOnlyIncomingAttacks(set) {
     onlyIncoming.forEach(arg => arg.color = '#bcefef');
 }
 
-function highlightArgsWithNoAttacksWithinSet(set) {
-    const noAttacksWithin = getArgsWithNoAttackWithinSet(set);
-    noAttacksWithin.forEach(arg => arg.color = '#c5f1c5');
+function highlightArgsWithNoIncomingAttacks(set) {
+    const noIncoming = set.filter(arg => !arg.incomingAttacks.length);
+    noIncoming.forEach(arg => arg.color = '#fc03db');
 }
 
 function highlightOddCycles(set) {
@@ -1741,8 +1741,8 @@ rotateButton.addEventListener('click', () => isRotated = !isRotated);
 allStepsButton.addEventListener('click', () => {
     pipeline()
 });
-highlightOddCyclesButton.addEventListener('click', () => {
-    highlightOddCycles(undecSet), highlightArgsWithNoAttacksWithinSet(undecSet), draw
+highlightUndecButton.addEventListener('click', () => {
+    highlightOddCycles(undecSet), highlightArgsWithNoIncomingAttacks(undecSet), draw
 });
 highlightDefendedButton.addEventListener('click', () => {
     highlightArgsWithOnlyIncomingAttacks(inSet), draw
