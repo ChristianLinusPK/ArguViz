@@ -641,7 +641,10 @@ function highlightArgsWithOnlyIncomingAttacks(set) {
 }
 
 function highlightArgsWithNoIncomingAttacks(set) {
-    const noIncoming = set.filter(arg => !arg.incomingAttacks.length);
+    const noIncoming = set.filter(arg => {
+        const incomingAttacks = arg.incomingAttacks.filter(att => att.from.set === set);
+        return incomingAttacks.length === 0
+    });
     noIncoming.forEach(arg => arg.color = '#fc03db');
 }
 
